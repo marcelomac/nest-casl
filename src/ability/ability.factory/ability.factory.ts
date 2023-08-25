@@ -23,12 +23,19 @@ export type AppAbility = MongoAbility<[Action, Subjects]>;
 @Injectable()
 export class AbilityFactory {
   defineAbility(user: User) {
-    const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+    const { can, cannot, build } = new AbilityBuilder<AppAbility>(
+      createMongoAbility,
+    );
 
     if (user.isAdmin) {
       can(Action.Manage, 'all');
+      // VER https://casl.js.org/v6/en/guide/conditions-in-depth
+      cannot(Action.Manage, User, { orgId: { $ne: user.orgId } }).because(
+        'You can only manage users in your organization.',
+      );
     } else {
       can(Action.Read, 'all');
+      cannot(Action.Create, User).because('special message: only admin!');
     }
 
     return build({

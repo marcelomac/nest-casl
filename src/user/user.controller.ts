@@ -6,11 +6,17 @@ import {
   Patch,
   Param,
   Delete,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AbilityFactory } from 'src/ability/ability.factory/ability.factory';
+import {
+  AbilityFactory,
+  Action,
+} from 'src/ability/ability.factory/ability.factory';
+import { User } from './entities/user.entity';
+import { ForbiddenError } from '@casl/ability';
 
 @Controller('users')
 export class UserController {
@@ -21,7 +27,27 @@ export class UserController {
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+    const user = { id: 1, isAdmin: false, orgId: 1 };
+    const ability = this.abilityFactory.defineAbility(user);
+
+    // const isAllowed = ability.can(Action.Create, User);
+    // if (!isAllowed) {
+    //   throw new ForbiddenException('Only admin!');
+    // }
+    //     return this.userService.create(createUserDto);
+
+    // IMPLEMENTAR FILTRO DE EXCEÇÃO:
+    try {
+      ForbiddenError.from(ability)
+        .setMessage('mensagem qualquer')
+        .throwUnlessCan(Action.Create, User);
+
+      return this.userService.create(createUserDto);
+    } catch (error) {
+      if (error instanceof ForbiddenError) {
+        throw new ForbiddenException(error.message);
+      }
+    }
   }
 
   @Get()
@@ -36,7 +62,17 @@ export class UserController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
+
+    // user admin current loged:
+    const user = { id: 1, isAdmin: true, orgId: 20 };
+
+    try {
+      return this.userService.update(+id, updateUserDto, user);
+    } catch (error) {
+      if (error instanceof ForbiddenError) {
+        throw new ForbiddenException(error.message);
+      }
+    }
   }
 
   @Delete(':id')
