@@ -36,6 +36,7 @@ export class AbilityFactory {
     } else {
       can(Action.Read, 'all');
       cannot(Action.Create, User).because('special message: only admin!');
+      cannot(Action.Delete, User).because('you just cant: only admin!');
     }
 
     return build({

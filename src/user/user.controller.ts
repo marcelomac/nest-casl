@@ -11,12 +11,13 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import {
-  AbilityFactory,
-  Action,
-} from 'src/ability/ability.factory/ability.factory';
+import { AbilityFactory, Action } from './../ability/ability.factory';
 import { User } from './entities/user.entity';
 import { ForbiddenError } from '@casl/ability';
+import {
+  CheckAbilities,
+  ReadUserAbility,
+} from './../ability/abilities.decorator';
 
 @Controller('users')
 export class UserController {
@@ -51,20 +52,21 @@ export class UserController {
   }
 
   @Get()
+  @CheckAbilities(new ReadUserAbility())
   findAll() {
     return this.userService.findAll();
   }
 
   @Get(':id')
+  @CheckAbilities(new ReadUserAbility())
   findOne(@Param('id') id: string) {
     return this.userService.findOne(+id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-
     // user admin current loged:
-    const user = { id: 1, isAdmin: true, orgId: 20 };
+    const user = { id: 1, isAdmin: true, orgId: 10 };
 
     try {
       return this.userService.update(+id, updateUserDto, user);
@@ -76,6 +78,7 @@ export class UserController {
   }
 
   @Delete(':id')
+  @CheckAbilities({ action: Action.Delete, subject: User })
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
